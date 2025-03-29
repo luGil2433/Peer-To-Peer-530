@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local P2P Chat</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Peer-to-Peer Chat (Local)</h1>
+    <input type="text" id="username" placeholder="Enter your name">
+    <button onclick="register()">Register</button>
+    
+    <h2>Send Message</h2>
+    <input type="text" id="receiver" placeholder="Receiver">
+    <input type="text" id="message" placeholder="Message">
+    <button onclick="sendMessage()">Send</button>
+    
+    <h2>Chat History</h2>
+    <button onclick="fetchMessages()">Load Messages</button>
+    <div id="messages"></div>
+
+    <script>
+        const socket = io("http://localhost:5001");  // Connect to the local server
+        let username = "";
+
+        function register() {
+            username = document.getElementById("username").value;
+            if (username) {
+                socket.emit("register", { username });
+                alert("Registered as " + username);
+            }
+        }
+
+        function sendMessage() {
+            const receiver = document.getElementById("receiver").value;
+            const message = document.getElementById("message").value;
+
+            if (receiver && message) {
+                socket.emit("send_message", { sender: username, receiver, content: message });
+            }
+        }
+
+        function fetchMessages() {
+            socket.emit("fetch_messages", { username });
+
+            socket.on("message_history", (data) => {
+                const messageDiv = document.getElementById("messages");
+                messageDiv.innerHTML = "<h3>Message History</h3>";
+                
+                data.messages.forEach(msg => {
+                    messageDiv.innerHTML += `<p><strong>${msg[0]} → ${msg[1]}:</strong> ${msg[2]} (${msg[3]})</p>`;
+                });
+            });
+        }
+
+        socket.on("receive_message", (data) => {
+            alert(`New message from ${data.sender}: ${data.content}`);
+        });
+    </script>
+</body>
+</html>
